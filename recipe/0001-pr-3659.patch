@@ -1,0 +1,214 @@
+From f034ecd7f9d946bf91b021c01267ad6265263a3a Mon Sep 17 00:00:00 2001
+From: Jan-Lukas Wynen <jan-lukas.wynen@ess.eu>
+Date: Wed, 12 Feb 2025 15:09:43 +0100
+Subject: [PATCH 1/3] Write dist-info in CMake
+
+---
+ lib/CMakeLists.txt            |  4 ++++
+ lib/cmake/scipp-install.cmake | 40 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
+
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index c3095af0f7..5503fee68e 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -219,6 +219,10 @@ endif(DYNAMIC_LIB)
+ include(scipp-install)
+ include(scipp-test)
+ 
++if(DEFINED ENV{CONDA_BUILD})
++  scipp_write_dist_info(${SCIPP_VERSION_PEP440})
++endif()
++
+ option(FULL_BUILD
+        "Enable full build where the 'all' target includes tests and benchmarks."
+        OFF
+diff --git a/lib/cmake/scipp-install.cmake b/lib/cmake/scipp-install.cmake
+index 2b077ff99d..cd9c9bfb0f 100644
+--- a/lib/cmake/scipp-install.cmake
++++ b/lib/cmake/scipp-install.cmake
+@@ -45,3 +45,43 @@ function(scipp_install_component)
+     endif()
+   endif(DYNAMIC_LIB)
+ endfunction()
++
++# Conda build does not create a dist-info folder like setuptools / scikit-build.
++# This function creates a minimal dist-info to satisfy
++# https://packaging.python.org/en/latest/specifications/recording-installed-packages/
++# There is no need to call this function when building with setuptools.
++function(scipp_write_dist_info)
++  set(oneValueArgs VERSION)
++  cmake_parse_arguments(
++    PARSE_ARGV 0 SCIPP_WRITE_DIST_INFO "" "${oneValueArgs}" ""
++  )
++
++  set(dist_info_dir ${CMAKE_CURRENT_BINARY_DIR}/dist-info)
++  if(DEFINED ENV{SP_DIR}) # conda build
++    set(target_dist_info_dir
++        "$ENV{SP_DIR}/scipp-${SCIPP_WRITE_DIST_INFO_VERSION}.dist-info"
++    )
++  else() # fallback, this function should not really be called in this case
++    set(target_dist_info_dir
++        "${CMAKE_INSTALL_PREFIX}/scipp-${SCIPP_WRITE_DIST_INFO_VERSION}.dist-info"
++    )
++  endif()
++  message(STATUS "Writing dist-info during build to ${dist_info_dir}")
++  message(STATUS "dist-info will be installed to ${target_dist_info_dir}")
++
++  set(metadata_file ${dist_info_dir}/METADATA)
++  file(
++    WRITE ${metadata_file}
++    "Metadata-Version: 2.4
++Name: ${PROJECT_NAME}
++Version: ${SCIPP_WRITE_DIST_INFO_VERSION}
++License-Expression: Bsd-3-Clause
++License-File: LICENSE
++"
++  )
++  install(FILES "${metadata_file}" DESTINATION "${target_dist_info_dir}")
++
++  install(FILES "${CMAKE_SOURCE_DIR}/LICENSE"
++          DESTINATION "${target_dist_info_dir}/licenses"
++  )
++endfunction()
+
+From 82212f0e1aa59ebd7d7bd16f039838e88016f499 Mon Sep 17 00:00:00 2001
+From: Jan-Lukas Wynen <jan-lukas.wynen@ess.eu>
+Date: Wed, 12 Feb 2025 15:58:18 +0100
+Subject: [PATCH 2/3] Split nested conditionals
+
+---
+ CMakeLists.txt | 71 +++++++++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 38 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 92968791fa..dd8b916421 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -7,38 +7,25 @@ cmake_minimum_required(VERSION 3.21)
+ cmake_policy(SET CMP0091 NEW)
+ 
+ if(SKBUILD)
+-  project(
+-    ${SKBUILD_PROJECT_NAME}
+-    VERSION ${SKBUILD_PROJECT_VERSION}
+-    LANGUAGES CXX
+-  )
+-  # AppleClang 15 changed linking order
+-  # https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking
+-  if(APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+-    message(STATUS "Building on macOS with Clang 15 or newer")
+-    add_link_options("-ld_classic")
+-  endif()
+-  add_definitions(-DSCIPP_VERSION="${SKBUILD_PROJECT_VERSION_FULL}")
++  set(SCIPP_VERSION_PEP440 "${SKBUILD_PROJECT_VERSION_FULL}")
++  set(SCIPP_VERSION_CMAKE "${SKBUILD_PROJECT_VERSION}")
+   message(STATUS "Got version from SKBUILD: ${SKBUILD_PROJECT_VERSION_FULL}")
++elseif(CONDA_FORGE_BUILD)
++  set(SCIPP_VERSION_PEP440 "$ENV{GIT_VERSION_INFO}")
++  set(SCIPP_VERSION_CMAKE "$ENV{GIT_VERSION_INFO}")
++  message(
++    STATUS "Got version from env var from conda-forge: ${SCIPP_VERSION_PEP440}"
++  )
+ else()
+-  # Set GIT_VERSION_INFO from conda recipe as conda-forge doesn't like using git
+-  # repos during the build process. The recipe links to the tar archive from a
+-  # github release.
+-  if(CONDA_FORGE_BUILD)
+-    set(GIT_VERSION_INFO $ENV{GIT_VERSION_INFO})
+-    set(HAVE_GIT_VERSION_INFO 0)
+-    message(
+-      STATUS
+-        "Got version from environment inside conda-forge build: $ENV{GIT_VERSION_INFO}"
+-    )
+-  else()
+-    execute_process(
+-      COMMAND git describe --tags --exclude nightly
+-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+-      RESULT_VARIABLE HAVE_GIT_VERSION_INFO
+-      OUTPUT_VARIABLE GIT_VERSION_INFO
+-      OUTPUT_STRIP_TRAILING_WHITESPACE
+-    )
++  execute_process(
++    COMMAND git describe --tags --exclude nightly
++    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
++    RESULT_VARIABLE HAVE_GIT_VERSION_INFO
++    OUTPUT_VARIABLE GIT_VERSION_INFO
++    OUTPUT_STRIP_TRAILING_WHITESPACE
++  )
++  if(NOT HAVE_GIT_VERSION_INFO EQUAL 0)
++    message(WARNING "Failed to get package version")
+   endif()
+   # We get something like 23.08.0-266-g068b161fe, remove the -g<hash> part
+   string(REGEX REPLACE "-g[0-9a-f]+$" "" GIT_VERSION_INFO ${GIT_VERSION_INFO})
+@@ -46,15 +33,23 @@ else()
+   string(REGEX REPLACE "-" ".dev" SCIPP_VERSION_PEP440 ${GIT_VERSION_INFO})
+   # Cmake does not like letters, remove the dev, will act as "tweak" number
+   string(REGEX REPLACE "-" "" SCIPP_VERSION_CMAKE ${GIT_VERSION_INFO})
++  unset(HAVE_GIT_VERSION_INFO, GIT_VERSION_INFO)
++  message(STATUS "Got version from git: ${SCIPP_VERSION_PEP440}")
++endif()
+ 
+-  project(
+-    scipp
+-    VERSION ${SCIPP_VERSION_CMAKE}
+-    LANGUAGES CXX
+-  )
+-  if(${HAVE_GIT_VERSION_INFO} EQUAL 0)
+-    message(STATUS "Got version from Git: ${GIT_VERSION_INFO}")
+-    add_definitions(-DSCIPP_VERSION="${SCIPP_VERSION_PEP440}")
++project(
++  scipp
++  VERSION ${SCIPP_VERSION_CMAKE}
++  LANGUAGES CXX
++)
++add_definitions(-DSCIPP_VERSION="${SCIPP_VERSION_PEP440}")
++
++if(SKBUILD)
++  # AppleClang 15 changed linking order
++  # https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking
++  if(APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
++    message(STATUS "Building on macOS with Clang 15 or newer")
++    add_link_options("-ld_classic")
+   endif()
+ endif()
+ 
+
+From d8a271d0ec41112f99edb2009371f6b648891db6 Mon Sep 17 00:00:00 2001
+From: Jan-Lukas Wynen <jan-lukas.wynen@ess.eu>
+Date: Wed, 12 Feb 2025 16:17:59 +0100
+Subject: [PATCH 3/3] Fix argument parsing
+
+---
+ CMakeLists.txt     | 3 ++-
+ lib/CMakeLists.txt | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index dd8b916421..ed6aca811a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -33,7 +33,8 @@ else()
+   string(REGEX REPLACE "-" ".dev" SCIPP_VERSION_PEP440 ${GIT_VERSION_INFO})
+   # Cmake does not like letters, remove the dev, will act as "tweak" number
+   string(REGEX REPLACE "-" "" SCIPP_VERSION_CMAKE ${GIT_VERSION_INFO})
+-  unset(HAVE_GIT_VERSION_INFO, GIT_VERSION_INFO)
++  unset(HAVE_GIT_VERSION_INFO)
++  unset(GIT_VERSION_INFO)
+   message(STATUS "Got version from git: ${SCIPP_VERSION_PEP440}")
+ endif()
+ 
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 5503fee68e..93e3ccfba8 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -220,7 +220,7 @@ include(scipp-install)
+ include(scipp-test)
+ 
+ if(DEFINED ENV{CONDA_BUILD})
+-  scipp_write_dist_info(${SCIPP_VERSION_PEP440})
++  scipp_write_dist_info(VERSION "${SCIPP_VERSION_PEP440}")
+ endif()
+ 
+ option(FULL_BUILD
+
