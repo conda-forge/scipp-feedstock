@@ -274,4 +274,9 @@ Feedstock Maintainers
 =====================
 
 * [@MridulS](https://github.com/MridulS/)
+* [@SimonHeybrock](https://github.com/SimonHeybrock/)
+* [@YooSunYoung](https://github.com/YooSunYoung/)
+* [@jl-wynen](https://github.com/jl-wynen/)
+* [@jokasimr](https://github.com/jokasimr/)
+* [@nvaytet](https://github.com/nvaytet/)
 
