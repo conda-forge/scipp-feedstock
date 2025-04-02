@@ -20,6 +20,7 @@ build:
     - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE=$PYTHON -DCONDA_FORGE_BUILD=ON  # [unix]
     - cmake --build --preset build
     - ctest --preset test  # [build_platform == target_platform]
+    - ${PYTHON} -m pip install --no-deps --no-index --ignore-installed --no-build-isolation -vv --prefix "${PREFIX}" . # [unix]
 
 requirements:
   build:
