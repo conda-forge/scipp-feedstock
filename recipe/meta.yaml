@@ -1,4 +1,4 @@
-{% set version = "25.03.0" %}
+{% set version = "25.04.0" %}
 
 package:
   name: scipp
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/scipp/scipp/archive/{{ version }}.tar.gz
-  sha256: d910773cb330bccc481ed27dde4dbd2ee09d265b4b294f2cc244b66e5f686ffd
+  sha256: 0cfb3c38aa5eb4a7b7c99b833d03663dc6357e279d07911f2618f5b5ee7f44cd
 
 build:
   skip: true  # [py<310]
@@ -28,7 +28,7 @@ requirements:
     - cross-python_{{ target_platform }}  # [build_platform != target_platform]
     - python  # [build_platform != target_platform]
     - cmake
-    - conan ==1.64.1
+    - conan ==1.66.0
     - ninja
     - make  # [unix]
   host:
