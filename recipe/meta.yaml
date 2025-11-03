@@ -17,7 +17,7 @@ build:
     - '*'        # [win]
   script:
     - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE="%PYTHON%" -DCONDA_FORGE_BUILD=ON  # [win]
-    - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE=$PYTHON -DCONDA_FORGE_BUILD=ON  # [unix]
+    - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE=$PYTHON -DCONDA_FORGE_BUILD=ON ${CMAKE_ARGS}  # [unix]
     - cmake --build --preset build
     - ctest --preset test  # [build_platform == target_platform]
 
