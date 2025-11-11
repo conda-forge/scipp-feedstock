@@ -1,4 +1,4 @@
-{% set version = "25.08.0" %}
+{% set version = "25.11.0" %}
 
 package:
   name: scipp
@@ -6,7 +6,9 @@ package:
 
 source:
   url: https://github.com/scipp/scipp/archive/{{ version }}.tar.gz
-  sha256: 2d9a37297f086c4f56b23ea49fec7146ad8d88b10ec1251f8a5447b389f0fce2
+  sha256: d817993e047e5ffefb5de8fdaa2491b1abd06cd5151b2550b71c8048cf6fc236
+  patches:
+    - gh3786.patch
 
 build:
   skip: true  # [py<311]
@@ -17,7 +19,7 @@ build:
     - '*'        # [win]
   script:
     - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE="%PYTHON%" -DCONDA_FORGE_BUILD=ON  # [win]
-    - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE=$PYTHON -DCONDA_FORGE_BUILD=ON  # [unix]
+    - cmake --preset package-{{ target_platform }} -DPython_EXECUTABLE=$PYTHON -DCONDA_FORGE_BUILD=ON ${CMAKE_ARGS}  # [unix]
     - cmake --build --preset build
     - ctest --preset test  # [build_platform == target_platform]
 
@@ -28,7 +30,6 @@ requirements:
     - cross-python_{{ target_platform }}  # [build_platform != target_platform]
     - python  # [build_platform != target_platform]
     - cmake
-    - conan ==1.66.0
     - ninja
     - make  # [unix]
   host:
