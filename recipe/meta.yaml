@@ -7,8 +7,6 @@ package:
 source:
   url: https://github.com/scipp/scipp/archive/{{ version }}.tar.gz
   sha256: 82092f0ff2ef282dbec88451b5b7156d034669577c1187d291af5fbb6131e968
-  patches:
-    - gh3786.patch
 
 build:
   skip: true  # [py<311]
