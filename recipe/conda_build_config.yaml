@@ -1,6 +1,2 @@
-cxx_compiler:         # [win]
-  - vs2022            # [win]
-c_compiler:           # [win]
-  - vs2022            # [win]
-macos_min_version:    # [osx]
-  - 14.0              # [osx]
+MACOSX_DEPLOYMENT_TARGET:    # [osx]
+  - 14.0                     # [osx]
