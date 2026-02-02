@@ -1,4 +1,4 @@
-{% set version = "26.1.1" %}
+{% set version = "26.2.0" %}
 
 package:
   name: scipp
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/scipp/scipp/archive/{{ version }}.tar.gz
-  sha256: d3ac3925394061d86db65a75c414bee004ec6a0cc214dd0e4da942a834d0c9db
+  sha256: 3a7de630b18cf4e9aa9629ea3cb3e83ec7104fdbb4498a68ff8ee52c73586ed5
 
 build:
   skip: true  # [py<311]
