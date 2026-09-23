@@ -35,7 +35,7 @@ requirements:
     - tbb-devel
     - libboost-headers
     - eigen
-    - pybind11
+    - pybind11 3.0.*
     - benchmark
     - gmock
     - gtest
