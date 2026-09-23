@@ -9,7 +9,7 @@ source:
   sha256: 676ecb68e8fbbcd5691b0b5cbe16f7a71677d8fc0cf7fdb3a36e3d825f265aa4
 
 build:
-  skip: true  # [py<311]
+  skip: true  # [py<312]
   script_env:
     - GIT_VERSION_INFO={{ version }}
   number: 0
