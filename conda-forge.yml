@@ -1,5 +1,4 @@
-conda_build:
-  error_overlinking: true
+conda_build_tool: rattler-build
 conda_forge_output_validation: true
 github:
   branch_name: main
@@ -7,3 +6,4 @@ github:
 test: native_and_emulated
 provider:
   osx_arm64: default
+  linux_aarch64: default

@@ -1,0 +1,46 @@
+From f05d6de24320c26c045aeedbdd551a0a80e9de93 Mon Sep 17 00:00:00 2001
+From: Mridul Seth <git@mriduls.com>
+Date: Sat, 24 Oct 2026 16:08:19 +0200
+Subject: [PATCH] Update pandas compatibility tests for pandas 3.1
+
+Test changes from https://github.com/scipp/scipp/commit/f05d6de24320c26c045aeedbdd551a0a80e9de93
+
+diff --git a/tests/compat/pandas_compat_test.py b/tests/compat/pandas_compat_test.py
+index 1e6b3ddf4..e52cfa598 100644
+--- a/tests/compat/pandas_compat_test.py
++++ b/tests/compat/pandas_compat_test.py
+@@ -56,5 +56,5 @@ def test_series() -> None:
+ def test_series_with_named_axis() -> None:
+     pd_df = pandas.Series(data=[1, 2, 3])
+-    pd_df.rename_axis("row-name", inplace=True)
++    pd_df = pd_df.rename_axis("row-name")
+
+     sc_ds = from_pandas(pd_df)
+@@ -67,5 +67,5 @@ def test_series_with_named_axis() -> None:
+ def test_series_with_named_axis_non_str() -> None:
+     pd_df = pandas.Series(data=[1, 2, 3])
+-    pd_df.rename_axis(987, inplace=True)
++    pd_df = pd_df.rename_axis(987)
+
+     sc_ds = from_pandas(pd_df)
+@@ -102,5 +102,5 @@ def test_series_with_named_series_no_str() -> None:
+ def test_series_with_named_series_and_named_axis() -> None:
+     pd_df = pandas.Series(data=[1, 2, 3])
+-    pd_df.rename_axis("axis-name", inplace=True)
++    pd_df = pd_df.rename_axis("axis-name")
+     pd_df.name = "series-name"
+
+@@ -159,5 +159,5 @@ def test_1d_dataframe() -> None:
+ def test_1d_dataframe_with_named_axis() -> None:
+     pd_df = pandas.DataFrame(data={"my-column": [1, 2, 3]})
+-    pd_df.rename_axis("1d_df", inplace=True)
++    pd_df = pd_df.rename_axis("1d_df")
+
+     sc_ds = from_pandas(pd_df)
+@@ -203,5 +203,5 @@ def test_2d_dataframe() -> None:
+ def test_2d_dataframe_with_named_axes() -> None:
+     pd_df = pandas.DataFrame(data={"col1": (2, 3), "col2": (5, 6)})
+-    pd_df.rename_axis("my-name-for-rows", inplace=True)
++    pd_df = pd_df.rename_axis("my-name-for-rows")
+
+     sc_ds = from_pandas(pd_df)
