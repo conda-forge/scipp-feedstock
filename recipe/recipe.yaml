@@ -1,0 +1,99 @@
+schema_version: 1
+
+context:
+  version: "26.11.0"
+
+package:
+  name: scipp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipp/scipp/archive/${{ version }}.tar.gz
+  sha256: 3e6bff5e865bba453c0ba6ec21f3fbfc41c10435cdc7d22813eed65ac471a354
+
+build:
+  number: 0
+  skip: match(python, "<3.12")
+  script:
+    env:
+      GIT_VERSION_INFO: ${{ version }}
+    content:
+      - if: win
+        then: cmake --preset package-${{ target_platform }} -DPython_EXECUTABLE="%PYTHON%" -DCONDA_FORGE_BUILD=ON
+      - if: unix
+        then: cmake --preset package-${{ target_platform }} -DPython_EXECUTABLE="$PYTHON" -DCONDA_FORGE_BUILD=ON ${CMAKE_ARGS}
+      - cmake --build --preset build
+      - if: build_platform == target_platform
+        then: ctest --preset test
+  dynamic_linking:
+    overlinking_behavior: error
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("cxx") }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+    - cmake
+    - ninja
+  host:
+    - python
+    - tbb-devel
+    - libboost-headers
+    - eigen
+    - pybind11 3.0.*
+    - gmock
+    - gtest
+  run:
+    - numpy >=2
+    - python
+    - tbb
+  ignore_run_exports:
+    by_name:
+      - gtest  # Used only by the C++ tests.
+
+tests:
+  - python:
+      imports:
+        - scipp
+      pip_check: false
+  - script:
+      - python -m pytest -v tests
+    requirements:
+      run:
+        - numba
+        - bs4
+        - h5py
+        - hypothesis
+        - pandas
+        - pytest
+        - python-graphviz
+        - xarray
+        - ipython
+        - scipy >=1.7.0
+    files:
+      source:
+        - pyproject.toml
+        - tests/
+
+about:
+  homepage: https://scipp.github.io/
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - LLNL_UNITS_LICENSE
+  summary: Multi-dimensional data arrays with labeled dimensions
+  description: Multi-dimensional data arrays with labeled dimensions
+  repository: https://github.com/scipp/scipp
+  documentation: https://scipp.github.io/
+
+extra:
+  recipe-maintainers:
+    - MridulS
+    - jl-wynen
+    - SimonHeybrock
+    - YooSunYoung
+    - jokasimr
+    - nvaytet
